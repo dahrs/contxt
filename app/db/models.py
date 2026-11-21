@@ -74,6 +74,8 @@ class Persona(BaseModel):
     preferred_medium: str
     vocabulary_strictness: str
     cultural_depth: str
+    timezone: str
+    daily_routine: str
     is_beginner_teacher: bool
     interests: list[str]
 

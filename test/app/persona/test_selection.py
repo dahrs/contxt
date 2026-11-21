@@ -37,6 +37,8 @@ def _persona(id_: int, interests: list[str] | None = None) -> Persona:
         preferred_medium="N/A",
         vocabulary_strictness="N/A",
         cultural_depth="N/A",
+        timezone="UTC",
+        daily_routine="N/A",
         is_beginner_teacher=False,
         interests=interests or [],
     )

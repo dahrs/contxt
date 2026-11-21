@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS personas (
     preferred_medium TEXT NOT NULL,
     vocabulary_strictness TEXT NOT NULL,
     cultural_depth TEXT NOT NULL,
+    timezone TEXT NOT NULL,
+    daily_routine TEXT NOT NULL,
     is_beginner_teacher INTEGER NOT NULL DEFAULT 0
 );
 

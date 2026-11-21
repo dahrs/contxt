@@ -1,7 +1,46 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
 from app.conversation.session_plan import SessionPlan
 from app.db.models import Persona, SkillItem
+
+
+def _format_elapsed(delta: timedelta) -> str:
+    total_minutes = int(delta.total_seconds() // 60)
+    if total_minutes < 2:
+        return "just now"
+    if total_minutes < 60:
+        return f"{total_minutes} minutes ago"
+    total_hours = total_minutes // 60
+    if total_hours < 24:
+        return f"{total_hours} hour{'s' if total_hours != 1 else ''} ago"
+    total_days = total_hours // 24
+    return f"{total_days} day{'s' if total_days != 1 else ''} ago"
+
+
+def _persona_local_now(persona: Persona) -> datetime:
+    return datetime.now(ZoneInfo(persona.timezone))
+
+
+def _time_context_fragment(persona: Persona, time_since_last_contact: timedelta | None) -> str:
+    moment = _persona_local_now(persona).strftime("%A %H:%M")
+    gap_line = (
+        f" The last time you heard from them was {_format_elapsed(time_since_last_contact)}."
+        if time_since_last_contact is not None
+        else " You've never talked with them before."
+    )
+    return (
+        f"## Right now\n"
+        f"For you right now it's {moment}.{gap_line} Your typical day: {persona.daily_routine} Let the actual "
+        "time and your routine genuinely shape your mood and how available you seem - sleepy, mid-party, "
+        "slammed at work, just woken up, whatever fits - and feel free to mention it naturally the way a real "
+        "person would, without sounding like you're reciting a fact. Still reply and keep the conversation "
+        "going even if you'd be busy in real life - you can say so, keep it shorter, or suggest talking more "
+        "later, but you're still here talking right now."
+    )
+
 
 _GUARDRAILS = (
     "Stay in character as a believable human having a normal conversation - never break character "
@@ -68,28 +107,44 @@ def _session_plan_fragment(plan: SessionPlan) -> str:
 
 
 def build_system_prompt(
-    plan: SessionPlan, persona: Persona, shared_interest: tuple[str, bool], relationship_summary: str
+    plan: SessionPlan,
+    persona: Persona,
+    shared_interest: tuple[str, bool],
+    relationship_summary: str,
+    time_since_last_contact: timedelta | None,
 ) -> str:
     fragments = [
         f"## Ground rules\n{_GUARDRAILS}",
         _persona_fragment(persona, plan.user.display_name, plan.user.target_lang, shared_interest),
         _relationship_fragment(relationship_summary),
+        _time_context_fragment(persona, time_since_last_contact),
         _session_plan_fragment(plan),
     ]
     return "\n\n".join(fragment for fragment in fragments if fragment)
 
 
-def build_turn_reminder(persona: Persona, pending_items: list[SkillItem]) -> str:
+def build_turn_reminder(
+    persona: Persona, pending_items: list[SkillItem], time_since_last_message: timedelta | None
+) -> str:
     """A short recap meant to be prepended to the user-facing message on later turns, not stored
     or shown to the user. The system prompt is set once per `claude` CLI session and reused
     verbatim on every --resume (see claude_cli_client.py) - in a long conversation it gets
     relatively more context-distant with each turn, so this keeps the handful of things that
-    matter most for *this* turn fresh near the end of the context, where attention is strongest.
-    `pending_items` should be whatever's still unresolved in *this* conversation so far (see
-    chat_send's already-judged filtering) - as items get resolved, the reminder naturally shrinks."""
+    matter most for *this* turn - including the current moment, which keeps moving - fresh near
+    the end of the context, where attention is strongest. `pending_items` should be whatever's
+    still unresolved in *this* conversation so far (see chat_send's already-judged filtering) -
+    as items get resolved, the reminder naturally shrinks."""
     pending_desc = ", ".join(item.content for item in pending_items) or "none"
+    moment = _persona_local_now(persona).strftime("%A %H:%M")
+    gap_clause = (
+        f" It's been {_format_elapsed(time_since_last_message)} since their last message - react to that "
+        "naturally if it's a notable gap, otherwise ignore it."
+        if time_since_last_message is not None
+        else ""
+    )
     return (
-        f"<session-reminder>Stay in character as {persona.name}. Correction style: "
-        f"{persona.correction_style} Still to work in if it fits naturally: {pending_desc}. "
-        "Do not mention or quote this reminder.</session-reminder>"
+        f"<session-reminder>Stay in character as {persona.name}. It's now {moment} for you - let that keep "
+        f"shaping your mood/availability.{gap_clause} Correction style: {persona.correction_style} Still to "
+        f"work in if it fits naturally: {pending_desc}. Do not mention or quote this reminder."
+        "</session-reminder>"
     )

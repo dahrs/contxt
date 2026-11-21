@@ -32,6 +32,8 @@ class _GeneratedPersona(BaseModel):
     preferred_medium: str
     vocabulary_strictness: str
     cultural_depth: str
+    timezone: str
+    daily_routine: str
     interests: list[str]
 
 
@@ -71,10 +73,16 @@ def _regular_batch_prompt(target_lang: str, culture_specific: bool, interest_poo
         "anecdotes), vocabulary_strictness (how strictly they stick to words/grammar the learner already knows "
         "vs. speaking naturally even if it goes a bit beyond - somewhere between strict and loose), "
         "cultural_depth (how much real cultural/historical/informational substance they weave in vs. keeping "
-        "things focused purely on language practice - somewhere between deep and light), and interests (a list "
-        "of 2-4 short topic tags). Make sure this batch has real variety across correction_style, "
-        "preferred_medium, vocabulary_strictness, and cultural_depth - don't make all 5 personas similar on "
-        "these. "
+        "things focused purely on language practice - somewhere between deep and light), timezone (the real "
+        "IANA timezone name for their origin, e.g. 'Europe/Paris', 'Africa/Dakar', 'America/Montreal' - must be "
+        "a real IANA zone identifier, not a city name or UTC offset), daily_routine (2-4 sentences on their "
+        "typical day - wake time, work/school hours, social hours, sleep time - grounded in their background "
+        "and personality: a workaholic has long tight work hours and is curt if messaged then; a night-owl "
+        "party type is slow/groggy in the morning but lively and hard to pin down late at night; an early riser "
+        "fades by mid-evening; note how weekends differ from weekdays if that persona's life has that shape), "
+        "and interests (a list of 2-4 short topic tags). Make sure this batch has real variety across "
+        "correction_style, preferred_medium, vocabulary_strictness, cultural_depth, and daily_routine - don't "
+        "make all 5 personas similar on these. "
         f"Pick interests mostly from this pool: {', '.join(interest_pool)} - but 1-2 can instead be something "
         "specific to the persona's own culture that isn't in that generic pool. "
         'Respond with JSON only: {"personas": [{...}, ...]}, no commentary.'
@@ -93,7 +101,8 @@ def _beginner_teacher_prompt(target_lang: str) -> tuple[str, str]:
         "few isolated words, to short phrases, to simple patterns, to full sentences, to short paragraphs, "
         "never assuming more than the learner has demonstrated), correction_style (should be gentle, given "
         "the audience), preferred_medium, vocabulary_strictness (should lean strict, given the audience), "
-        "cultural_depth (should lean light at first, given the audience), and interests (2-4 short topic "
+        "cultural_depth (should lean light at first, given the audience), timezone (a real IANA timezone name "
+        "for their origin), daily_routine (2-4 sentences on their typical day), and interests (2-4 short topic "
         "tags). "
         'Respond with JSON only: {"personas": [{...}]} (a list with exactly one persona), no commentary.'
     )
@@ -122,6 +131,8 @@ def _generate_and_store(target_lang: str, system_prompt: str, user_prompt: str, 
             preferred_medium=p.preferred_medium,
             vocabulary_strictness=p.vocabulary_strictness,
             cultural_depth=p.cultural_depth,
+            timezone=p.timezone,
+            daily_routine=p.daily_routine,
             interests=p.interests,
             is_beginner_teacher=is_beginner_teacher,
         )

@@ -27,6 +27,8 @@ def make_persona(
         preferred_medium="N/A",
         vocabulary_strictness="N/A",
         cultural_depth="N/A",
+        timezone="UTC",
+        daily_routine="N/A",
         interests=interests or [],
         is_beginner_teacher=is_beginner_teacher,
     )
