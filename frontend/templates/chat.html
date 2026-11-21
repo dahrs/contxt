@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}contxt - {{ persona_name }}{% endblock %}
+{% block content %}
+<div class="chat-card">
+  <header class="chat-header">
+    <a href="/chat" class="back-link">&larr;</a>
+    <h1>{{ persona_name }} <span class="topic-tag">{{ conversation.topic }}</span></h1>
+  </header>
+  <div class="messages">
+    {% for message in messages %}
+    <div class="bubble {{ message.role }}">{{ message.text }}</div>
+    {% endfor %}
+  </div>
+  <form method="post" action="/chat/{{ conversation.id }}/message" class="composer">
+    <input type="text" name="text" placeholder="Type a message..." required autofocus autocomplete="off">
+    <button type="submit">Send</button>
+  </form>
+</div>
+{% endblock %}

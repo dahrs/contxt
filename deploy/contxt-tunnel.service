@@ -1,0 +1,14 @@
+[Unit]
+Description=contxt no-signup SSH tunnel (localhost.run)
+After=network.target contxt.service
+Requires=contxt.service
+
+[Service]
+Type=simple
+User=dahrs
+ExecStart=/home/dahrs/contxt/deploy/tunnel.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

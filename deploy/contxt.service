@@ -1,0 +1,14 @@
+[Unit]
+Description=contxt web app
+After=network.target
+
+[Service]
+Type=simple
+User=dahrs
+WorkingDirectory=/home/dahrs/contxt
+ExecStart=/home/dahrs/.local/bin/uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

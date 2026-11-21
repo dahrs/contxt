@@ -1,0 +1,459 @@
+{
+  "interests": [
+    {
+      "topic": "rock climbing",
+      "category": "hobby",
+      "sensitive": false
+    },
+    {
+      "topic": "pottery making",
+      "category": "hobby",
+      "sensitive": false
+    },
+    {
+      "topic": "beekeeping",
+      "category": "hobby",
+      "sensitive": false
+    },
+    {
+      "topic": "model trains",
+      "category": "hobby",
+      "sensitive": false
+    },
+    {
+      "topic": "urban sketching",
+      "category": "hobby",
+      "sensitive": false
+    },
+    {
+      "topic": "home brewing",
+      "category": "hobby",
+      "sensitive": false
+    },
+    {
+      "topic": "origami",
+      "category": "hobby",
+      "sensitive": false
+    },
+    {
+      "topic": "vintage motorcycles",
+      "category": "hobby",
+      "sensitive": false
+    },
+    {
+      "topic": "stamp collecting",
+      "category": "hobby",
+      "sensitive": false
+    },
+    {
+      "topic": "woodworking",
+      "category": "hobby",
+      "sensitive": false
+    },
+    {
+      "topic": "board game design",
+      "category": "hobby",
+      "sensitive": false
+    },
+    {
+      "topic": "trail running",
+      "category": "physical_activity",
+      "sensitive": false
+    },
+    {
+      "topic": "bouldering",
+      "category": "physical_activity",
+      "sensitive": false
+    },
+    {
+      "topic": "open water swimming",
+      "category": "physical_activity",
+      "sensitive": false
+    },
+    {
+      "topic": "crossfit training",
+      "category": "physical_activity",
+      "sensitive": false
+    },
+    {
+      "topic": "yoga practice",
+      "category": "physical_activity",
+      "sensitive": false
+    },
+    {
+      "topic": "road cycling",
+      "category": "physical_activity",
+      "sensitive": false
+    },
+    {
+      "topic": "muay thai",
+      "category": "physical_activity",
+      "sensitive": false
+    },
+    {
+      "topic": "aerial yoga",
+      "category": "physical_activity",
+      "sensitive": false
+    },
+    {
+      "topic": "ultimate frisbee",
+      "category": "physical_activity",
+      "sensitive": false
+    },
+    {
+      "topic": "indoor skydiving",
+      "category": "physical_activity",
+      "sensitive": false
+    },
+    {
+      "topic": "true crime podcasts",
+      "category": "entertainment",
+      "sensitive": false
+    },
+    {
+      "topic": "korean dramas",
+      "category": "entertainment",
+      "sensitive": false
+    },
+    {
+      "topic": "anime binge watching",
+      "category": "entertainment",
+      "sensitive": false
+    },
+    {
+      "topic": "escape room games",
+      "category": "entertainment",
+      "sensitive": false
+    },
+    {
+      "topic": "stand up comedy",
+      "category": "entertainment",
+      "sensitive": false
+    },
+    {
+      "topic": "speedrunning games",
+      "category": "entertainment",
+      "sensitive": false
+    },
+    {
+      "topic": "reality tv shows",
+      "category": "entertainment",
+      "sensitive": false
+    },
+    {
+      "topic": "tabletop roleplay",
+      "category": "entertainment",
+      "sensitive": false
+    },
+    {
+      "topic": "horror movies",
+      "category": "entertainment",
+      "sensitive": false
+    },
+    {
+      "topic": "indie video games",
+      "category": "entertainment",
+      "sensitive": false
+    },
+    {
+      "topic": "street food tours",
+      "category": "culture",
+      "sensitive": false
+    },
+    {
+      "topic": "flamenco dance",
+      "category": "culture",
+      "sensitive": false
+    },
+    {
+      "topic": "tea ceremony",
+      "category": "culture",
+      "sensitive": false
+    },
+    {
+      "topic": "calligraphy traditions",
+      "category": "culture",
+      "sensitive": false
+    },
+    {
+      "topic": "carnival festivals",
+      "category": "culture",
+      "sensitive": false
+    },
+    {
+      "topic": "folk music revival",
+      "category": "culture",
+      "sensitive": false
+    },
+    {
+      "topic": "museum hopping",
+      "category": "culture",
+      "sensitive": false
+    },
+    {
+      "topic": "regional dialects",
+      "category": "culture",
+      "sensitive": false
+    },
+    {
+      "topic": "traditional tattoos",
+      "category": "culture",
+      "sensitive": false
+    },
+    {
+      "topic": "ancient ruins",
+      "category": "culture",
+      "sensitive": false
+    },
+    {
+      "topic": "amateur astronomy",
+      "category": "personal_passion",
+      "sensitive": false
+    },
+    {
+      "topic": "vintage synthesizers",
+      "category": "personal_passion",
+      "sensitive": false
+    },
+    {
+      "topic": "competitive chess",
+      "category": "personal_passion",
+      "sensitive": false
+    },
+    {
+      "topic": "mushroom foraging",
+      "category": "personal_passion",
+      "sensitive": false
+    },
+    {
+      "topic": "specialty coffee",
+      "category": "personal_passion",
+      "sensitive": false
+    },
+    {
+      "topic": "language learning",
+      "category": "personal_passion",
+      "sensitive": false
+    },
+    {
+      "topic": "genealogy research",
+      "category": "personal_passion",
+      "sensitive": false
+    },
+    {
+      "topic": "urban exploration",
+      "category": "personal_passion",
+      "sensitive": false
+    },
+    {
+      "topic": "sourdough baking",
+      "category": "personal_passion",
+      "sensitive": false
+    },
+    {
+      "topic": "vinyl record collecting",
+      "category": "personal_passion",
+      "sensitive": false
+    },
+    {
+      "topic": "freelance design",
+      "category": "work_career",
+      "sensitive": false
+    },
+    {
+      "topic": "startup founding",
+      "category": "work_career",
+      "sensitive": false
+    },
+    {
+      "topic": "nursing profession",
+      "category": "work_career",
+      "sensitive": false
+    },
+    {
+      "topic": "software engineering",
+      "category": "work_career",
+      "sensitive": false
+    },
+    {
+      "topic": "restaurant management",
+      "category": "work_career",
+      "sensitive": false
+    },
+    {
+      "topic": "academic research",
+      "category": "work_career",
+      "sensitive": false
+    },
+    {
+      "topic": "career change",
+      "category": "work_career",
+      "sensitive": false
+    },
+    {
+      "topic": "remote work",
+      "category": "work_career",
+      "sensitive": false
+    },
+    {
+      "topic": "small business ownership",
+      "category": "work_career",
+      "sensitive": false
+    },
+    {
+      "topic": "job interviewing",
+      "category": "work_career",
+      "sensitive": false
+    },
+    {
+      "topic": "immigrant upbringing",
+      "category": "social_background",
+      "sensitive": false
+    },
+    {
+      "topic": "military family",
+      "category": "social_background",
+      "sensitive": false
+    },
+    {
+      "topic": "rural upbringing",
+      "category": "social_background",
+      "sensitive": false
+    },
+    {
+      "topic": "only child",
+      "category": "social_background",
+      "sensitive": false
+    },
+    {
+      "topic": "boarding school",
+      "category": "social_background",
+      "sensitive": false
+    },
+    {
+      "topic": "multilingual household",
+      "category": "social_background",
+      "sensitive": false
+    },
+    {
+      "topic": "working class roots",
+      "category": "social_background",
+      "sensitive": false
+    },
+    {
+      "topic": "expat community",
+      "category": "social_background",
+      "sensitive": false
+    },
+    {
+      "topic": "big extended family",
+      "category": "social_background",
+      "sensitive": false
+    },
+    {
+      "topic": "small town roots",
+      "category": "social_background",
+      "sensitive": false
+    },
+    {
+      "topic": "minimalist living",
+      "category": "lifestyle_routine",
+      "sensitive": false
+    },
+    {
+      "topic": "early morning routine",
+      "category": "lifestyle_routine",
+      "sensitive": false
+    },
+    {
+      "topic": "meal prepping",
+      "category": "lifestyle_routine",
+      "sensitive": false
+    },
+    {
+      "topic": "digital detox",
+      "category": "lifestyle_routine",
+      "sensitive": false
+    },
+    {
+      "topic": "van life travel",
+      "category": "lifestyle_routine",
+      "sensitive": false
+    },
+    {
+      "topic": "intermittent fasting",
+      "category": "lifestyle_routine",
+      "sensitive": false
+    },
+    {
+      "topic": "zero waste living",
+      "category": "lifestyle_routine",
+      "sensitive": false
+    },
+    {
+      "topic": "homesteading",
+      "category": "lifestyle_routine",
+      "sensitive": false
+    },
+    {
+      "topic": "budget travel",
+      "category": "lifestyle_routine",
+      "sensitive": false
+    },
+    {
+      "topic": "journaling habit",
+      "category": "lifestyle_routine",
+      "sensitive": false
+    },
+    {
+      "topic": "progressive activism",
+      "category": "political",
+      "sensitive": true
+    },
+    {
+      "topic": "conservative politics",
+      "category": "political",
+      "sensitive": true
+    },
+    {
+      "topic": "libertarian views",
+      "category": "political",
+      "sensitive": true
+    },
+    {
+      "topic": "climate policy debate",
+      "category": "political",
+      "sensitive": true
+    },
+    {
+      "topic": "labor union organizing",
+      "category": "political",
+      "sensitive": true
+    },
+    {
+      "topic": "christian faith",
+      "category": "religious",
+      "sensitive": true
+    },
+    {
+      "topic": "muslim practice",
+      "category": "religious",
+      "sensitive": true
+    },
+    {
+      "topic": "buddhist meditation",
+      "category": "religious",
+      "sensitive": true
+    },
+    {
+      "topic": "jewish traditions",
+      "category": "religious",
+      "sensitive": true
+    },
+    {
+      "topic": "atheist worldview",
+      "category": "religious",
+      "sensitive": true
+    }
+  ]
+}
