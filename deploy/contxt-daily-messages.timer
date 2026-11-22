@@ -1,0 +1,9 @@
+[Unit]
+Description=Hourly check for proactive outreach messages (actual send cadence per user is gated by app/config.py's proactive_min_gap_hours and each persona's free_hours)
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

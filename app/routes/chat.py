@@ -1,32 +1,28 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
-
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 
 from app.auth.dependencies import require_user
-from app.conversation.prompt import build_system_prompt, build_turn_reminder
-from app.conversation.session_plan import build_session_plan
+from app.conversation.prompt import build_turn_reminder
 from app.conversation.signals import apply_outcomes, extract_outcomes
+from app.conversation.start import elapsed_since, start_conversation
 from app.db.conversations import (
     add_message,
-    create_conversation,
     get_conversation,
     get_judged_item_ids,
     get_messages,
+    get_most_recent_conversation_with_persona,
     list_conversations,
     set_claude_session_id,
 )
-from app.db.models import User
-from app.db.personas import get_persona
+from app.db.models import Persona, User
+from app.db.personas import get_beginner_teacher_persona, get_persona
 from app.db.skills import get_skill_item
-from app.db.users import get_interests
 from app.llm import get_llm_client
 from app.logging import get_logger
-from app.persona.memory import sync_after_conversation
-from app.persona.selection import select_persona, shared_interest
+from app.persona.selection import is_free_now, select_persona
 
 log = get_logger(__name__)
 router = APIRouter()
@@ -38,44 +34,44 @@ def _persona_name(persona_id: int) -> str:
     return persona.name if persona is not None else "Unknown"
 
 
-def _elapsed_since(timestamp: str | None) -> timedelta | None:
-    if timestamp is None:
-        return None
-    return datetime.now(UTC) - datetime.fromisoformat(timestamp)
-
-
 @router.get("/chat")
 def chat_index(request: Request, user: User = Depends(require_user)) -> object:
     conversations = list_conversations(user.id)
     rows = [{"conversation": c, "persona_name": _persona_name(c.persona_id)} for c in conversations]
-    return templates.TemplateResponse(request, "chat_index.html", {"rows": rows})
+
+    # A heads-up before committing to a thread, not just an after-the-fact "sorry, busy" reply -
+    # scoped to personas the user actually has a relationship with, not the whole roster.
+    known_persona_ids = {c.persona_id for c in conversations}
+    known_personas = [p for pid in known_persona_ids if (p := get_persona(pid)) is not None]
+    available_now = sorted(p.name for p in known_personas if is_free_now(p))
+    probably_busy = sorted(p.name for p in known_personas if not is_free_now(p))
+
+    return templates.TemplateResponse(
+        request, "chat_index.html", {"rows": rows, "available_now": available_now, "probably_busy": probably_busy}
+    )
 
 
 @router.post("/chat/new")
 def chat_new(request: Request, user: User = Depends(require_user)) -> RedirectResponse:
     llm = get_llm_client()
     persona = select_persona(user)
-    prior_with_persona = [c for c in list_conversations(user.id) if c.persona_id == persona.id]
-    time_since_last_contact = _elapsed_since(prior_with_persona[0].started_at if prior_with_persona else None)
+    conversation = start_conversation(llm, user, persona, "(greet the learner and start the conversation)")
+    return RedirectResponse(url=f"/chat/{conversation.id}", status_code=303)
 
-    relationship_summary = sync_after_conversation(llm, user, persona)
-    # sync_after_conversation may have just updated this persona's own character sheet (new/
-    # dropped interest, routine change) - re-fetch so this new conversation reflects that, per
-    # the "replaces... every time a new conversation starts" requirement.
-    refreshed_persona = get_persona(persona.id)
-    if refreshed_persona is not None:
-        persona = refreshed_persona
 
-    plan = build_session_plan(user)
-    interest = shared_interest(persona, get_interests(user.id))
-    target_item_ids = [item.id for item in plan.due_items + plan.new_items]
-    conversation = create_conversation(user.id, persona.id, plan.topic, target_item_ids)
+@router.post("/chat/teacher")
+def chat_teacher(request: Request, user: User = Depends(require_user)) -> RedirectResponse:
+    """The beginner-teacher is a standing, on-demand reference, not a one-time onboarding step -
+    continues the existing help thread if one exists, rather than starting a fresh one each time."""
+    teacher: Persona | None = get_beginner_teacher_persona(user.target_lang)
+    if teacher is None:
+        return RedirectResponse(url="/chat", status_code=303)
 
-    system_prompt = build_system_prompt(plan, persona, interest, relationship_summary, time_since_last_contact)
-    reply_text, session_id = llm.generate(system_prompt, None, "(greet the learner and start the conversation)")
-    set_claude_session_id(conversation.id, session_id)
-    add_message(conversation.id, "assistant", reply_text)
+    existing = get_most_recent_conversation_with_persona(user.id, teacher.id)
+    if existing is not None:
+        return RedirectResponse(url=f"/chat/{existing.id}", status_code=303)
 
+    conversation = start_conversation(get_llm_client(), user, teacher, "(greet the learner and start the conversation)")
     return RedirectResponse(url=f"/chat/{conversation.id}", status_code=303)
 
 
@@ -100,7 +96,7 @@ def chat_send(
         return RedirectResponse(url="/chat", status_code=303)
 
     previous_messages = get_messages(conversation_id)
-    time_since_last_message = _elapsed_since(previous_messages[-1].created_at if previous_messages else None)
+    time_since_last_message = elapsed_since(previous_messages[-1].created_at if previous_messages else None)
 
     user_message = add_message(conversation_id, "user", text)
 

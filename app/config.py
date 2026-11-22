@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     max_due_items_per_session: int = 5
     max_chronic_items_shown: int = 3
     relationship_summary_max_words: int = 120
+    proactive_min_gap_hours: int = 20
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_address: str = ""
 
     @property
     def db_path(self) -> Path:

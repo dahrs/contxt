@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 
 import app.persona.selection as selection_module
 from app.db.models import Conversation, Persona, User
-from app.persona.selection import is_first_conversation, select_persona, shared_interest
+from app.persona.selection import (
+    is_first_conversation,
+    is_free_now,
+    select_persona,
+    select_proactive_persona,
+    shared_interest,
+)
 
 
 def _user(is_absolute_beginner: bool = False) -> User:
@@ -16,11 +24,13 @@ def _user(is_absolute_beginner: bool = False) -> User:
         native_lang="eng",
         target_lang="fra",
         is_absolute_beginner=is_absolute_beginner,
+        email=None,
+        last_proactive_sent_at=None,
         created_at="2026-01-01T00:00:00Z",
     )
 
 
-def _persona(id_: int, interests: list[str] | None = None) -> Persona:
+def _persona(id_: int, interests: list[str] | None = None, free_hours: list[int] | None = None) -> Persona:
     return Persona(
         id=id_,
         target_lang="fra",
@@ -39,6 +49,7 @@ def _persona(id_: int, interests: list[str] | None = None) -> Persona:
         cultural_depth="N/A",
         timezone="UTC",
         daily_routine="N/A",
+        free_hours=free_hours if free_hours is not None else list(range(24)),
         is_beginner_teacher=False,
         interests=interests or [],
     )
@@ -46,7 +57,14 @@ def _persona(id_: int, interests: list[str] | None = None) -> Persona:
 
 def _conversation() -> Conversation:
     return Conversation(
-        id=1, user_id=1, persona_id=1, topic="travel", claude_session_id=None, target_item_ids=[], started_at="x"
+        id=1,
+        user_id=1,
+        persona_id=1,
+        topic="travel",
+        claude_session_id=None,
+        target_item_ids=[],
+        is_proactive=False,
+        started_at="x",
     )
 
 
@@ -161,3 +179,52 @@ def test__shared_interest_raises_when_all_user_interests_are_sensitive(monkeypat
 
     with pytest.raises(ValueError):
         shared_interest(persona, {"conservative politics": 1.0})
+
+
+def test__is_free_now_true_when_current_hour_is_in_free_hours() -> None:
+    current_hour = datetime.now(UTC).hour
+    persona = _persona(1, free_hours=[current_hour])
+
+    assert is_free_now(persona) is True
+
+
+def test__is_free_now_false_when_current_hour_is_not_in_free_hours() -> None:
+    current_hour = datetime.now(UTC).hour
+    other_hour = (current_hour + 12) % 24
+
+    assert is_free_now(_persona(1, free_hours=[other_hour])) is False
+
+
+def test__select_proactive_persona_none_with_no_engagement_history(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(selection_module, "get_persona_engagement_token_counts", lambda user_id: {})
+
+    assert select_proactive_persona(_user()) is None
+
+
+def test__select_proactive_persona_none_when_nobody_in_top_four_is_free(monkeypatch: pytest.MonkeyPatch) -> None:
+    busy = _persona(1, free_hours=[])
+    monkeypatch.setattr(selection_module, "get_persona_engagement_token_counts", lambda user_id: {1: 10})
+    monkeypatch.setattr(selection_module, "get_persona", lambda persona_id: busy)
+
+    assert select_proactive_persona(_user()) is None
+
+
+def test__select_proactive_persona_picks_among_the_free_candidates(monkeypatch: pytest.MonkeyPatch) -> None:
+    free_persona = _persona(2, free_hours=list(range(24)))
+    busy_persona = _persona(1, free_hours=[])
+    personas = {1: busy_persona, 2: free_persona}
+    monkeypatch.setattr(selection_module, "get_persona_engagement_token_counts", lambda user_id: {1: 100, 2: 50})
+    monkeypatch.setattr(selection_module, "get_persona", lambda persona_id: personas[persona_id])
+
+    assert select_proactive_persona(_user()) == free_persona
+
+
+def test__select_proactive_persona_only_considers_the_top_four_by_engagement(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Five candidates; only the 5th (lowest engagement) is free. It should never be picked -
+    # only the top 4 by token count are eligible at all.
+    personas = {i: _persona(i, free_hours=list(range(24)) if i == 5 else []) for i in range(1, 6)}
+    counts = {1: 50, 2: 40, 3: 30, 4: 20, 5: 10}
+    monkeypatch.setattr(selection_module, "get_persona_engagement_token_counts", lambda user_id: counts)
+    monkeypatch.setattr(selection_module, "get_persona", lambda persona_id: personas[persona_id])
+
+    assert select_proactive_persona(_user()) is None

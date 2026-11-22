@@ -84,6 +84,11 @@ button {
 .error { color: #c0392b; }
 
 .list-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.header-actions { display: flex; gap: 8px; }
+button.secondary { background: var(--bubble-assistant); color: var(--bubble-assistant-text); }
+
+.availability { font-size: 0.85rem; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
+.availability .available { color: var(--accent); }
 
 .conversation-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 .conversation-list li.empty { color: var(--muted); }

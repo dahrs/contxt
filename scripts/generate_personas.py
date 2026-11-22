@@ -34,6 +34,7 @@ class _GeneratedPersona(BaseModel):
     cultural_depth: str
     timezone: str
     daily_routine: str
+    free_hours: list[int]
     interests: list[str]
 
 
@@ -80,6 +81,9 @@ def _regular_batch_prompt(target_lang: str, culture_specific: bool, interest_poo
         "and personality: a workaholic has long tight work hours and is curt if messaged then; a night-owl "
         "party type is slow/groggy in the morning but lively and hard to pin down late at night; an early riser "
         "fades by mid-evening; note how weekends differ from weekdays if that persona's life has that shape), "
+        "free_hours (a list of 2-4 integer hours, 0-23, in THEIR OWN local time, consistent with daily_routine - "
+        "the hours they'd actually be relaxed/chatty enough to text someone first, e.g. a workaholic's evening "
+        "hours, a night owl's late-night hours, an early riser's early-morning hours), "
         "and interests (a list of 2-4 short topic tags). Make sure this batch has real variety across "
         "correction_style, preferred_medium, vocabulary_strictness, cultural_depth, and daily_routine - don't "
         "make all 5 personas similar on these. "
@@ -102,8 +106,8 @@ def _beginner_teacher_prompt(target_lang: str) -> tuple[str, str]:
         "never assuming more than the learner has demonstrated), correction_style (should be gentle, given "
         "the audience), preferred_medium, vocabulary_strictness (should lean strict, given the audience), "
         "cultural_depth (should lean light at first, given the audience), timezone (a real IANA timezone name "
-        "for their origin), daily_routine (2-4 sentences on their typical day), and interests (2-4 short topic "
-        "tags). "
+        "for their origin), daily_routine (2-4 sentences on their typical day), free_hours (2-4 integer hours, "
+        "0-23, in their own local time, consistent with daily_routine), and interests (2-4 short topic tags). "
         'Respond with JSON only: {"personas": [{...}]} (a list with exactly one persona), no commentary.'
     )
     return system_prompt, "Generate the persona now."
@@ -133,6 +137,7 @@ def _generate_and_store(target_lang: str, system_prompt: str, user_prompt: str, 
             cultural_depth=p.cultural_depth,
             timezone=p.timezone,
             daily_routine=p.daily_routine,
+            free_hours=p.free_hours,
             interests=p.interests,
             is_beginner_teacher=is_beginner_teacher,
         )

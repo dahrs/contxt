@@ -19,6 +19,8 @@ def _user() -> User:
         native_lang="eng",
         target_lang="fra",
         is_absolute_beginner=False,
+        email=None,
+        last_proactive_sent_at=None,
         created_at="2026-01-01T00:00:00Z",
     )
 
@@ -42,6 +44,7 @@ def _persona() -> Persona:
         cultural_depth="N/A",
         timezone="UTC",
         daily_routine="N/A",
+        free_hours=list(range(24)),
         is_beginner_teacher=False,
         interests=["cooking"],
     )

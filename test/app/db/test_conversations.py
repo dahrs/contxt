@@ -8,7 +8,9 @@ from app.db.conversations import (
     get_judged_item_ids,
     get_messages,
     get_messages_with_persona_after,
+    get_most_recent_conversation_with_persona,
     get_most_recent_persona_id,
+    get_persona_engagement_token_counts,
     get_recent_topics,
     list_conversations,
 )
@@ -106,3 +108,47 @@ def test__get_recent_topics_respects_limit() -> None:
         create_conversation(user.id, _make_persona().id, topic, [])
 
     assert get_recent_topics(user.id, limit=2) == ["c", "b"]
+
+
+def test__get_persona_engagement_token_counts_counts_user_messages_only() -> None:
+    user = create_user("alice", "pw", "Alice", "eng", "fra")
+    persona = _make_persona()
+    conversation = create_conversation(user.id, persona.id, "travel", [])
+    add_message(conversation.id, "user", "one two three")
+    add_message(conversation.id, "assistant", "this is a much longer reply with many more words")
+    add_message(conversation.id, "user", "four five")
+
+    counts = get_persona_engagement_token_counts(user.id)
+
+    assert counts == {persona.id: 5}  # 3 + 2 user-sent tokens, the assistant's words never count
+
+
+def test__get_persona_engagement_token_counts_excludes_beginner_teacher() -> None:
+    user = create_user("alice", "pw", "Alice", "eng", "fra")
+    teacher = _make_persona(is_beginner_teacher=True)
+    conversation = create_conversation(user.id, teacher.id, "help", [])
+    add_message(conversation.id, "user", "lots and lots of words here to the teacher")
+
+    assert get_persona_engagement_token_counts(user.id) == {}
+
+
+def test__get_persona_engagement_token_counts_sums_across_multiple_conversations() -> None:
+    user = create_user("alice", "pw", "Alice", "eng", "fra")
+    persona = _make_persona()
+    first = create_conversation(user.id, persona.id, "travel", [])
+    second = create_conversation(user.id, persona.id, "cooking", [])
+    add_message(first.id, "user", "one two")
+    add_message(second.id, "user", "three four five")
+
+    assert get_persona_engagement_token_counts(user.id) == {persona.id: 5}
+
+
+def test__get_most_recent_conversation_with_persona_found_and_missing() -> None:
+    user = create_user("alice", "pw", "Alice", "eng", "fra")
+    persona_a = _make_persona()
+    persona_b = _make_persona()
+    create_conversation(user.id, persona_a.id, "first", [])
+    latest = create_conversation(user.id, persona_a.id, "second", [])
+
+    assert get_most_recent_conversation_with_persona(user.id, persona_a.id) == latest
+    assert get_most_recent_conversation_with_persona(user.id, persona_b.id) is None

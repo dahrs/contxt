@@ -1,0 +1,9 @@
+[Unit]
+Description=contxt proactive outreach check
+After=network.target
+
+[Service]
+Type=oneshot
+User=dahrs
+WorkingDirectory=/home/dahrs/contxt
+ExecStart=/home/dahrs/.local/bin/uv run python scripts/send_daily_messages.py

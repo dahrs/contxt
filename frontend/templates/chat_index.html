@@ -4,8 +4,17 @@
 <div class="list-card">
   <header class="list-header">
     <h1>Your conversations</h1>
-    <form method="post" action="/chat/new"><button type="submit">New conversation</button></form>
+    <div class="header-actions">
+      <form method="post" action="/chat/new"><button type="submit">New conversation</button></form>
+      <form method="post" action="/chat/teacher"><button type="submit" class="secondary">Ask the teacher</button></form>
+    </div>
   </header>
+  {% if available_now or probably_busy %}
+  <p class="availability">
+    {% if available_now %}<span class="available">Available now: {{ available_now|join(", ") }}</span>{% endif %}
+    {% if probably_busy %}<span class="busy">Probably busy: {{ probably_busy|join(", ") }}</span>{% endif %}
+  </p>
+  {% endif %}
   <ul class="conversation-list">
     {% for row in rows %}
     <li><a href="/chat/{{ row.conversation.id }}">{{ row.persona_name }} - {{ row.conversation.topic }} - {{ row.conversation.started_at }}</a></li>

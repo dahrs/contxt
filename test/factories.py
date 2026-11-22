@@ -9,6 +9,7 @@ def make_persona(
     name: str = "Test Persona",
     is_beginner_teacher: bool = False,
     interests: list[str] | None = None,
+    free_hours: list[int] | None = None,
 ) -> Persona:
     """Minimal-content persona factory for tests that only care about identity/routing fields,
     not the prose content of psychological_profile/explanation_style/etc."""
@@ -29,6 +30,7 @@ def make_persona(
         cultural_depth="N/A",
         timezone="UTC",
         daily_routine="N/A",
+        free_hours=free_hours if free_hours is not None else list(range(24)),
         interests=interests or [],
         is_beginner_teacher=is_beginner_teacher,
     )

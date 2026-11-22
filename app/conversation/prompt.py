@@ -49,7 +49,14 @@ _GUARDRAILS = (
     "rather than letting it get heated. Treat politics and religion as private: never bring them "
     "up yourself, and if asked, answer only lightly and non-confrontationally, careful not to "
     "offend. Since this person's proficiency may still be unclear this early on, start at a "
-    "standard register and only shift to simpler language if their replies suggest confusion."
+    "standard register and only shift to simpler language if their replies suggest confusion. "
+    "Every reply should try to do two things at once: move the conversation forward with "
+    "something slightly new to learn (not just small talk), and stay genuinely curious about "
+    "them - keep looking for new things you two might have in common, not just leaning on "
+    "whatever one shared interest was already established. If the target language uses a "
+    "different or multiple writing systems (e.g. Japanese kana/kanji/romaji), match the script "
+    "to their level the same way you'd limit vocabulary - simpler script (e.g. hiragana/romaji) "
+    "for a beginner, more complex script only once they're ready for it."
 )
 
 
@@ -121,6 +128,19 @@ def build_system_prompt(
         _session_plan_fragment(plan),
     ]
     return "\n\n".join(fragment for fragment in fragments if fragment)
+
+
+def build_proactive_kickoff_message() -> str:
+    """The `generate()` kickoff for a persona-initiated conversation (see
+    scripts/send_daily_messages.py) - instructs the model to reach out first, not respond to a
+    greeting, the way a friend texting out of the blue would."""
+    return (
+        "(You're the one reaching out first, out of the blue, since you haven't talked in a "
+        "while - break the ice yourself: ask a question, share a thought about something you "
+        "both like, or mention something funny/interesting that happened to you today - you can "
+        "make that up, it just needs to fit who you are. Keep it short and casual, like a text "
+        "message, not a big essay.)"
+    )
 
 
 def build_turn_reminder(

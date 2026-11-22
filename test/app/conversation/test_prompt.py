@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from app.conversation.prompt import build_system_prompt, build_turn_reminder
+from app.conversation.prompt import build_proactive_kickoff_message, build_system_prompt, build_turn_reminder
 from app.conversation.session_plan import LearnerProfileSummary, SessionPlan
 from app.db.models import Persona, SkillItem, User
 
@@ -16,6 +16,8 @@ def _user() -> User:
         native_lang="eng",
         target_lang="fra",
         is_absolute_beginner=False,
+        email=None,
+        last_proactive_sent_at=None,
         created_at="2026-01-01T00:00:00Z",
     )
 
@@ -59,6 +61,7 @@ def _persona(**overrides: object) -> Persona:
         "cultural_depth": "light",
         "timezone": "UTC",
         "daily_routine": "N/A",
+        "free_hours": list(range(24)),
         "is_beginner_teacher": False,
         "interests": ["cooking"],
     }
@@ -189,3 +192,17 @@ def test__build_turn_reminder_omits_gap_clause_within_the_same_exchange() -> Non
     reminder = build_turn_reminder(_persona(), pending_items=[], time_since_last_message=None)
 
     assert "since their last message" not in reminder
+
+
+def test__build_proactive_kickoff_message_instructs_breaking_the_ice() -> None:
+    message = build_proactive_kickoff_message()
+
+    assert "reaching out first" in message
+    assert "break the ice" in message
+
+
+def test__build_system_prompt_dual_motivation_and_script_matching_in_guardrails() -> None:
+    prompt = build_system_prompt(_plan(), _persona(), ("cooking", True), "", None)
+
+    assert "something slightly new to learn" in prompt
+    assert "match the script to their level" in prompt

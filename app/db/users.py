@@ -15,6 +15,8 @@ def _row_to_user(row: sqlite3.Row) -> User:
         native_lang=row["native_lang"],
         target_lang=row["target_lang"],
         is_absolute_beginner=bool(row["is_absolute_beginner"]),
+        email=row["email"],
+        last_proactive_sent_at=row["last_proactive_sent_at"],
         created_at=row["created_at"],
     )
 
@@ -26,12 +28,13 @@ def create_user(
     native_lang: str,
     target_lang: str,
     is_absolute_beginner: bool = False,
+    email: str | None = None,
 ) -> User:
     with get_connection() as conn:
         cur = conn.execute(
             "INSERT INTO users (username, password_hash, display_name, native_lang, target_lang, "
-            "is_absolute_beginner) VALUES (?, ?, ?, ?, ?, ?)",
-            (username, password_hash, display_name, native_lang, target_lang, is_absolute_beginner),
+            "is_absolute_beginner, email) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (username, password_hash, display_name, native_lang, target_lang, is_absolute_beginner, email),
         )
         user_id = cur.lastrowid
     if user_id is None:
@@ -67,3 +70,14 @@ def get_interests(user_id: int) -> dict[str, float]:
     with get_connection() as conn:
         rows = conn.execute("SELECT topic, weight FROM interests WHERE user_id = ?", (user_id,)).fetchall()
     return {row["topic"]: row["weight"] for row in rows}
+
+
+def list_all_users() -> list[User]:
+    with get_connection() as conn:
+        rows = conn.execute("SELECT * FROM users").fetchall()
+    return [_row_to_user(row) for row in rows]
+
+
+def set_last_proactive_sent_at(user_id: int, timestamp: str) -> None:
+    with get_connection() as conn:
+        conn.execute("UPDATE users SET last_proactive_sent_at = ? WHERE id = ?", (timestamp, user_id))

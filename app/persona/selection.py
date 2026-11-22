@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import random
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
-from app.db.conversations import get_most_recent_persona_id, list_conversations
+from app.db.conversations import get_most_recent_persona_id, get_persona_engagement_token_counts, list_conversations
 from app.db.models import Persona, User
-from app.db.personas import get_beginner_teacher_persona, list_personas
+from app.db.personas import get_beginner_teacher_persona, get_persona, list_personas
 from app.persona.candidate_interests import sensitive_topics
+
+_PROACTIVE_CANDIDATE_COUNT = 4
 
 
 def is_first_conversation(user: User) -> bool:
@@ -46,3 +50,24 @@ def shared_interest(persona: Persona, user_interests: dict[str, float]) -> tuple
         return best, True
     top_user_interest = max(safe_user_interests, key=lambda topic: safe_user_interests[topic])
     return top_user_interest, False
+
+
+def is_free_now(persona: Persona) -> bool:
+    return datetime.now(ZoneInfo(persona.timezone)).hour in persona.free_hours
+
+
+def select_proactive_persona(user: User) -> Persona | None:
+    """Among the (up to) 4 personas the user has talked to the most - measured in the user's own
+    words, never the persona's, and never counting the beginner-teacher (see
+    get_persona_engagement_token_counts) - pick one at random from whichever are free right now.
+    None means nothing eligible this hour: no engagement history yet, or none of the top 4 happen
+    to be free - both are expected, not errors."""
+    counts = get_persona_engagement_token_counts(user.id)
+    if not counts:
+        return None
+    top_ids = sorted(counts, key=lambda persona_id: counts[persona_id], reverse=True)[:_PROACTIVE_CANDIDATE_COUNT]
+    candidates = [get_persona(persona_id) for persona_id in top_ids]
+    free_candidates = [p for p in candidates if p is not None and is_free_now(p)]
+    if not free_candidates:
+        return None
+    return random.choice(free_candidates)

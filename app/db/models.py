@@ -17,6 +17,8 @@ class User(BaseModel):
     native_lang: str
     target_lang: str
     is_absolute_beginner: bool
+    email: str | None
+    last_proactive_sent_at: str | None
     created_at: str
 
 
@@ -47,6 +49,7 @@ class Conversation(BaseModel):
     topic: str
     claude_session_id: str | None
     target_item_ids: list[int]
+    is_proactive: bool
     started_at: str
 
 
@@ -76,6 +79,7 @@ class Persona(BaseModel):
     cultural_depth: str
     timezone: str
     daily_routine: str
+    free_hours: list[int]
     is_beginner_teacher: bool
     interests: list[str]
 

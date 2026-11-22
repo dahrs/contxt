@@ -15,6 +15,7 @@ def _row_to_conversation(row: sqlite3.Row) -> Conversation:
         topic=row["topic"],
         claude_session_id=row["claude_session_id"],
         target_item_ids=json.loads(row["target_item_ids_json"]),
+        is_proactive=bool(row["is_proactive"]),
         started_at=row["started_at"],
     )
 
@@ -29,11 +30,14 @@ def _row_to_message(row: sqlite3.Row) -> Message:
     )
 
 
-def create_conversation(user_id: int, persona_id: int, topic: str, target_item_ids: list[int]) -> Conversation:
+def create_conversation(
+    user_id: int, persona_id: int, topic: str, target_item_ids: list[int], is_proactive: bool = False
+) -> Conversation:
     with get_connection() as conn:
         cur = conn.execute(
-            "INSERT INTO conversations (user_id, persona_id, topic, target_item_ids_json) VALUES (?, ?, ?, ?)",
-            (user_id, persona_id, topic, json.dumps(target_item_ids)),
+            "INSERT INTO conversations (user_id, persona_id, topic, target_item_ids_json, is_proactive) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (user_id, persona_id, topic, json.dumps(target_item_ids), is_proactive),
         )
         conversation_id = cur.lastrowid
         if conversation_id is None:
@@ -131,6 +135,38 @@ def get_most_recent_persona_id(user_id: int) -> int | None:
             (user_id,),
         ).fetchone()
     return row["persona_id"] if row is not None else None
+
+
+def get_persona_engagement_token_counts(user_id: int) -> dict[int, int]:
+    """Space-separated-token count of the user's *own* messages (never the persona's), summed per
+    persona - used to rank "who the user talks to most" for picking a proactive-outreach sender.
+    The beginner-teacher is excluded here at the source, not filtered out by callers, since they're
+    never a candidate for this regardless of how much the user leans on them for help."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT c.persona_id, m.text
+            FROM messages m
+            JOIN conversations c ON c.id = m.conversation_id
+            JOIN personas p ON p.id = c.persona_id
+            WHERE c.user_id = ? AND m.role = 'user' AND p.is_beginner_teacher = 0
+            """,
+            (user_id,),
+        ).fetchall()
+    counts: dict[int, int] = {}
+    for row in rows:
+        counts[row["persona_id"]] = counts.get(row["persona_id"], 0) + len(row["text"].split())
+    return counts
+
+
+def get_most_recent_conversation_with_persona(user_id: int, persona_id: int) -> Conversation | None:
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM conversations WHERE user_id = ? AND persona_id = ? "
+            "ORDER BY started_at DESC, id DESC LIMIT 1",
+            (user_id, persona_id),
+        ).fetchone()
+    return _row_to_conversation(row) if row is not None else None
 
 
 def get_messages_with_persona_after(user_id: int, persona_id: int, after_message_id: int) -> list[Message]:

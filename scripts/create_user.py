@@ -23,6 +23,7 @@ def main() -> int:
         action="store_true",
         help="route their first-ever conversation to the dedicated beginner-teacher persona",
     )
+    parser.add_argument("--email", default=None, help="optional, only used for proactive-message notifications")
     args = parser.parse_args()
 
     try:
@@ -34,6 +35,7 @@ def main() -> int:
             args.native_lang,
             args.target_lang,
             is_absolute_beginner=args.absolute_beginner,
+            email=args.email,
         )
     except Exception:
         log.exception("failed to create user %r", args.username)

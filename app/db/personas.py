@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -26,6 +27,7 @@ def _row_to_persona(row: sqlite3.Row, interests: list[str]) -> Persona:
         cultural_depth=row["cultural_depth"],
         timezone=row["timezone"],
         daily_routine=row["daily_routine"],
+        free_hours=json.loads(row["free_hours_json"]),
         is_beginner_teacher=bool(row["is_beginner_teacher"]),
         interests=interests,
     )
@@ -53,6 +55,7 @@ def create_persona(
     cultural_depth: str,
     timezone: str,
     daily_routine: str,
+    free_hours: list[int],
     interests: list[str],
     is_beginner_teacher: bool = False,
 ) -> Persona:
@@ -60,6 +63,8 @@ def create_persona(
         ZoneInfo(timezone)
     except ZoneInfoNotFoundError as exc:
         raise ValueError(f"not a valid IANA timezone: {timezone!r}") from exc
+    if any(hour < 0 or hour > 23 for hour in free_hours):
+        raise ValueError(f"free_hours must be in 0-23: {free_hours!r}")
 
     with get_connection() as conn:
         cur = conn.execute(
@@ -68,8 +73,8 @@ def create_persona(
                 (target_lang, name, origin, age, background, physical_description,
                  psychological_profile, social_habits, explanation_style, teaching_philosophy,
                  correction_style, preferred_medium, vocabulary_strictness, cultural_depth,
-                 timezone, daily_routine, is_beginner_teacher)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 timezone, daily_routine, free_hours_json, is_beginner_teacher)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 target_lang,
@@ -88,6 +93,7 @@ def create_persona(
                 cultural_depth,
                 timezone,
                 daily_routine,
+                json.dumps(free_hours),
                 is_beginner_teacher,
             ),
         )

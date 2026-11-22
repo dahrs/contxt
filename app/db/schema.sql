@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
     native_lang TEXT NOT NULL,
     target_lang TEXT NOT NULL,
     is_absolute_beginner INTEGER NOT NULL DEFAULT 0,
+    email TEXT,
+    last_proactive_sent_at TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
@@ -51,6 +53,7 @@ CREATE TABLE IF NOT EXISTS personas (
     cultural_depth TEXT NOT NULL,
     timezone TEXT NOT NULL,
     daily_routine TEXT NOT NULL,
+    free_hours_json TEXT NOT NULL,
     is_beginner_teacher INTEGER NOT NULL DEFAULT 0
 );
 
@@ -95,6 +98,7 @@ CREATE TABLE IF NOT EXISTS conversations (
     topic TEXT NOT NULL,
     claude_session_id TEXT,
     target_item_ids_json TEXT NOT NULL,
+    is_proactive INTEGER NOT NULL DEFAULT 0,
     started_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
