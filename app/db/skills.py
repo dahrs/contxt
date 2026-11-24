@@ -10,10 +10,10 @@ def _row_to_skill_item(row: sqlite3.Row, prerequisite_ids: list[int]) -> SkillIt
     return SkillItem(
         id=row["id"],
         type=row["type"],
+        native_lang=row["native_lang"],
         target_lang=row["target_lang"],
         content=row["content"],
-        level=row["level"],
-        category=row["category"],
+        milestone_id=row["milestone_id"],
         prerequisite_ids=prerequisite_ids,
     )
 
@@ -25,16 +25,16 @@ def _prerequisite_ids(conn: sqlite3.Connection, item_id: int) -> list[int]:
 
 def create_skill_item(
     item_type: SkillItemType,
+    native_lang: str,
     target_lang: str,
     content: str,
-    level: str,
-    category: str | None = None,
+    milestone_id: int,
     prerequisite_ids: list[int] | None = None,
 ) -> SkillItem:
     with get_connection() as conn:
         cur = conn.execute(
-            "INSERT INTO skill_items (type, target_lang, content, level, category) VALUES (?, ?, ?, ?, ?)",
-            (item_type, target_lang, content, level, category),
+            "INSERT INTO skill_items (type, native_lang, target_lang, content, milestone_id) VALUES (?, ?, ?, ?, ?)",
+            (item_type, native_lang, target_lang, content, milestone_id),
         )
         item_id = cur.lastrowid
         if item_id is None:
@@ -57,7 +57,9 @@ def get_skill_item(item_id: int) -> SkillItem | None:
         return _row_to_skill_item(row, _prerequisite_ids(conn, item_id))
 
 
-def list_skill_items(target_lang: str) -> list[SkillItem]:
+def list_skill_items(native_lang: str, target_lang: str) -> list[SkillItem]:
     with get_connection() as conn:
-        rows = conn.execute("SELECT * FROM skill_items WHERE target_lang = ?", (target_lang,)).fetchall()
+        rows = conn.execute(
+            "SELECT * FROM skill_items WHERE native_lang = ? AND target_lang = ?", (native_lang, target_lang)
+        ).fetchall()
         return [_row_to_skill_item(row, _prerequisite_ids(conn, row["id"])) for row in rows]

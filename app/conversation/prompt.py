@@ -56,7 +56,10 @@ _GUARDRAILS = (
     "whatever one shared interest was already established. If the target language uses a "
     "different or multiple writing systems (e.g. Japanese kana/kanji/romaji), match the script "
     "to their level the same way you'd limit vocabulary - simpler script (e.g. hiragana/romaji) "
-    "for a beginner, more complex script only once they're ready for it."
+    "for a beginner, more complex script only once they're ready for it. When you're deliberately "
+    "re-testing or reinforcing something they've struggled with, prioritize sounding like "
+    "yourself in a real exchange over squeezing the content in - a genuinely interesting, "
+    "authentic reply that misses the content entirely is better than a stilted one that hits it."
 )
 
 
@@ -100,16 +103,35 @@ def _session_plan_fragment(plan: SessionPlan) -> str:
     due_desc = ", ".join(item.content for item in plan.due_items) or "none"
     new_desc = ", ".join(item.content for item in plan.new_items) or "none"
     chronic_desc = ", ".join(item.content for item in plan.learner_profile.chronic_issue_items) or "none"
+    milestone_line = (
+        f" Right now you're helping them with: {plan.current_milestone.name} - {plan.current_milestone.description}"
+        if plan.current_milestone is not None
+        else ""
+    )
+    # An advanced learner who's introduced everything currently unlocked has no scripted frontier
+    # content left (current_milestone/new_items both go empty) - that's exactly where a realistic,
+    # advanced conversation matters most, and where the chronic-issue backlog (lapsed FSRS items,
+    # not freshly-chosen ones) becomes the thing worth covertly re-testing, since it can't be
+    # pre-planned the way a beginner's next milestone can.
+    advanced_clause = (
+        " They've worked through everything currently unlocked, so there's nothing scripted left to "
+        "introduce - this is exactly where an authentic, advanced conversation matters most. Don't force a "
+        "review into the conversation; instead, stay alert for a genuine opening that naturally lets you "
+        "re-test or reinforce whichever of these they haven't fully nailed down yet, and take it if one "
+        "arises - but let the conversation's own direction win if none does."
+        if plan.current_milestone is None and not plan.new_items
+        else ""
+    )
     # Deliberately states facts only (what's known/due/new) - how closely to honor the vocabulary
     # ceiling is the persona's own vocabulary_strictness call, not a fixed rule here. This section
     # comes last, right before the user's actual message, deliberately: it's the part that most
     # directly drives this turn, and the end of a long prompt gets more attention than the middle.
     return (
         f"## This session's focus\n"
-        f"Have a natural written conversation about: {plan.topic}. Try to naturally work in a review of: "
-        f"{due_desc}. If it fits naturally, introduce: {new_desc}. They already know about "
-        f"{plan.learner_profile.known_item_count} items across {len(plan.learner_profile.known_categories)} "
-        f"categories. Be especially patient and encouraging around: {chronic_desc}."
+        f"Have a natural written conversation about: {plan.topic}.{milestone_line} Try to naturally work in a "
+        f"review of: {due_desc}. If it fits naturally, introduce: {new_desc}. They already know about "
+        f"{plan.learner_profile.known_item_count} items across {len(plan.learner_profile.known_milestones)} "
+        f"milestones. Be especially patient and encouraging around: {chronic_desc}.{advanced_clause}"
     )
 
 

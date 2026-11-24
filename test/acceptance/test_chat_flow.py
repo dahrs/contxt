@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from app.auth.security import hash_password
 from app.db.conversations import get_judged_item_ids
 from app.db.memory import get_state
+from app.db.milestones import create_milestone
 from app.db.skills import create_skill_item
 from app.db.users import create_user, set_interests
 from test.conftest import FakeLLMClient
@@ -40,7 +41,8 @@ def test__sending_a_message_runs_signal_extraction_and_updates_memory(
     client: TestClient, use_fake_llm: FakeLLMClient
 ) -> None:
     make_persona()
-    item = create_skill_item("vocab", "fra", "bonjour", "A1")
+    milestone = create_milestone("Greetings", "Can greet someone", "A1")
+    item = create_skill_item("vocab", "eng", "fra", "bonjour", milestone.id)
     use_fake_llm.generate_response = ("opening message", "cli-session-1")
     _login(client)
     new_conv = client.post("/chat/new", follow_redirects=False)

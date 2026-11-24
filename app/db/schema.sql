@@ -18,13 +18,29 @@ CREATE TABLE IF NOT EXISTS interests (
     PRIMARY KEY (user_id, topic)
 );
 
+-- Language-independent sequence of communicative milestones (classroom language, greetings,
+-- basic transactional interactions, ...) - skill_items belong to one, and the milestone DAG
+-- gates which items are even reachable, one level above skill_item_prerequisites' own DAG.
+CREATE TABLE IF NOT EXISTS milestones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    cefr_level TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS milestone_prerequisites (
+    milestone_id INTEGER NOT NULL REFERENCES milestones(id) ON DELETE CASCADE,
+    prerequisite_id INTEGER NOT NULL REFERENCES milestones(id) ON DELETE CASCADE,
+    PRIMARY KEY (milestone_id, prerequisite_id)
+);
+
 CREATE TABLE IF NOT EXISTS skill_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type TEXT NOT NULL CHECK (type IN ('vocab', 'grammar', 'syntax', 'phonetic', 'register')),
+    native_lang TEXT NOT NULL,
     target_lang TEXT NOT NULL,
     content TEXT NOT NULL,
-    level TEXT NOT NULL,
-    category TEXT
+    milestone_id INTEGER NOT NULL REFERENCES milestones(id)
 );
 
 CREATE TABLE IF NOT EXISTS skill_item_prerequisites (

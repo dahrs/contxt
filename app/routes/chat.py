@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 
 from app.auth.dependencies import require_user
+from app.conversation.authenticity import verify_and_rephrase
 from app.conversation.prompt import build_turn_reminder
 from app.conversation.signals import apply_outcomes, extract_outcomes
 from app.conversation.start import elapsed_since, start_conversation
@@ -119,6 +120,8 @@ def chat_send(
     reply_text, session_id = get_llm_client().generate("", conversation.claude_session_id, llm_message)
     if conversation.claude_session_id is None:
         set_claude_session_id(conversation_id, session_id)
+    if persona is not None:
+        reply_text = verify_and_rephrase(get_llm_client(), persona, reply_text, still_pending_items)
     add_message(conversation_id, "assistant", reply_text)
 
     return RedirectResponse(url=f"/chat/{conversation_id}", status_code=303)

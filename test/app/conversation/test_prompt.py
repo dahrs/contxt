@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from app.conversation.prompt import build_proactive_kickoff_message, build_system_prompt, build_turn_reminder
 from app.conversation.session_plan import LearnerProfileSummary, SessionPlan
-from app.db.models import Persona, SkillItem, User
+from app.db.models import Milestone, Persona, SkillItem, User
 
 
 def _user() -> User:
@@ -24,7 +24,7 @@ def _user() -> User:
 
 def _item(id_: int, content: str) -> SkillItem:
     return SkillItem(
-        id=id_, type="vocab", target_lang="fra", content=content, level="A1", category=None, prerequisite_ids=[]
+        id=id_, type="vocab", native_lang="eng", target_lang="fra", content=content, milestone_id=1, prerequisite_ids=[]
     )
 
 
@@ -34,8 +34,9 @@ def _plan(**overrides: object) -> SessionPlan:
         "topic": "travel",
         "due_items": [_item(1, "bonjour")],
         "new_items": [_item(2, "au revoir")],
+        "current_milestone": None,
         "learner_profile": LearnerProfileSummary(
-            known_item_count=5, known_categories={"greetings": 5}, chronic_issue_items=[]
+            known_item_count=5, known_milestones={"greetings": 5}, chronic_issue_items=[]
         ),
     }
     defaults.update(overrides)
@@ -206,3 +207,39 @@ def test__build_system_prompt_dual_motivation_and_script_matching_in_guardrails(
 
     assert "something slightly new to learn" in prompt
     assert "match the script to their level" in prompt
+
+
+def test__build_system_prompt_mentions_current_milestone_when_set() -> None:
+    milestone = Milestone(id=1, name="Greetings", description="Can greet someone", cefr_level="A1", prerequisite_ids=[])
+
+    prompt = build_system_prompt(_plan(current_milestone=milestone), _persona(), ("cooking", True), "", None)
+
+    assert "Greetings" in prompt
+    assert "Can greet someone" in prompt
+
+
+def test__build_system_prompt_omits_milestone_line_when_none() -> None:
+    prompt = build_system_prompt(_plan(current_milestone=None), _persona(), ("cooking", True), "", None)
+
+    assert "helping them with" not in prompt
+
+
+def test__build_system_prompt_includes_advanced_clause_when_frontier_exhausted() -> None:
+    prompt = build_system_prompt(_plan(current_milestone=None, new_items=[]), _persona(), ("cooking", True), "", None)
+
+    assert "nothing scripted left to introduce" in prompt
+
+
+def test__build_system_prompt_omits_advanced_clause_when_new_items_remain() -> None:
+    prompt = build_system_prompt(_plan(current_milestone=None), _persona(), ("cooking", True), "", None)
+
+    assert "nothing scripted left to introduce" not in prompt
+
+
+def test__build_system_prompt_omits_advanced_clause_when_milestone_in_progress() -> None:
+    milestone = Milestone(id=1, name="Greetings", description="Can greet someone", cefr_level="A1", prerequisite_ids=[])
+    prompt = build_system_prompt(
+        _plan(current_milestone=milestone, new_items=[]), _persona(), ("cooking", True), "", None
+    )
+
+    assert "nothing scripted left to introduce" not in prompt

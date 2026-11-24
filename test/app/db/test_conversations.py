@@ -14,15 +14,20 @@ from app.db.conversations import (
     get_recent_topics,
     list_conversations,
 )
+from app.db.milestones import create_milestone
 from app.db.skills import create_skill_item
 from app.db.users import create_user
 from test.factories import make_persona as _make_persona
 
 
+def _milestone_id() -> int:
+    return create_milestone("Greetings", "Can greet someone", "A1").id
+
+
 def test__create_conversation_roundtrip() -> None:
     user = create_user("alice", "pw", "Alice", "eng", "fra")
     persona = _make_persona()
-    item = create_skill_item("vocab", "fra", "bonjour", "A1")
+    item = create_skill_item("vocab", "eng", "fra", "bonjour", _milestone_id())
 
     conversation = create_conversation(user.id, persona.id, "travel", [item.id])
 
@@ -49,7 +54,7 @@ def test__add_message_and_get_messages_in_order() -> None:
 
 def test__get_judged_item_ids_reflects_recorded_events() -> None:
     user = create_user("alice", "pw", "Alice", "eng", "fra")
-    item = create_skill_item("vocab", "fra", "bonjour", "A1")
+    item = create_skill_item("vocab", "eng", "fra", "bonjour", _milestone_id())
     conversation = create_conversation(user.id, _make_persona().id, "travel", [item.id])
     message = add_message(conversation.id, "user", "bonjour")
 

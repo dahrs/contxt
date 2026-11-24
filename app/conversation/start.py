@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from app.conversation.authenticity import verify_and_rephrase
 from app.conversation.prompt import build_system_prompt
 from app.conversation.session_plan import build_session_plan
 from app.db.conversations import add_message, create_conversation, list_conversations, set_claude_session_id
@@ -45,6 +46,8 @@ def start_conversation(
 
     system_prompt = build_system_prompt(plan, persona, interest, relationship_summary, time_since_last_contact)
     reply_text, session_id = llm.generate(system_prompt, None, kickoff_message)
+    focus_items = plan.due_items + plan.new_items + plan.learner_profile.chronic_issue_items
+    reply_text = verify_and_rephrase(llm, persona, reply_text, focus_items)
     set_claude_session_id(conversation.id, session_id)
     add_message(conversation.id, "assistant", reply_text)
 

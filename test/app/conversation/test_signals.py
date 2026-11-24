@@ -11,7 +11,13 @@ from test.conftest import FakeLLMClient
 
 def _item(id_: int) -> SkillItem:
     return SkillItem(
-        id=id_, type="vocab", target_lang="fra", content=f"item-{id_}", level="A1", category=None, prerequisite_ids=[]
+        id=id_,
+        type="vocab",
+        native_lang="eng",
+        target_lang="fra",
+        content=f"item-{id_}",
+        milestone_id=1,
+        prerequisite_ids=[],
     )
 
 

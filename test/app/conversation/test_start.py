@@ -70,7 +70,8 @@ def _plan(user: User) -> SessionPlan:
         topic="travel",
         due_items=[],
         new_items=[],
-        learner_profile=LearnerProfileSummary(known_item_count=0, known_categories={}, chronic_issue_items=[]),
+        current_milestone=None,
+        learner_profile=LearnerProfileSummary(known_item_count=0, known_milestones={}, chronic_issue_items=[]),
     )
 
 

@@ -5,6 +5,8 @@ import sys
 
 from app.auth.security import hash_password
 from app.db.connection import init_db
+from app.db.personas import list_personas
+from app.db.skills import list_skill_items
 from app.db.users import create_user
 from app.logging import get_logger
 
@@ -43,6 +45,21 @@ def main() -> int:
         return 1
 
     print(f"Created user {user.username!r} (id={user.id}).")
+
+    # Personas/content are generated on demand, per language, once someone actually asks to
+    # learn it - not pre-generated speculatively. This just makes sure that's a deliberate next
+    # step and not a surprise the user hits mid-conversation (select_persona already raises a
+    # clear error there too, but catching it here is earlier and friendlier).
+    missing = []
+    if not list_personas(args.target_lang):
+        missing.append(f"scripts/generate_personas.py {args.target_lang}")
+    if not list_skill_items(args.native_lang, args.target_lang):
+        missing.append(f"scripts/generate_skill_items.py {args.native_lang} {args.target_lang}")
+    if missing:
+        print(f"Note: no content yet for {args.native_lang!r} -> {args.target_lang!r} - run before they try to chat:")
+        for command in missing:
+            print(f"  uv run python {command}")
+
     return 0
 
 

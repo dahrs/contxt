@@ -22,13 +22,21 @@ class User(BaseModel):
     created_at: str
 
 
+class Milestone(BaseModel):
+    id: int
+    name: str
+    description: str
+    cefr_level: str
+    prerequisite_ids: list[int]
+
+
 class SkillItem(BaseModel):
     id: int
     type: SkillItemType
+    native_lang: str
     target_lang: str
     content: str
-    level: str
-    category: str | None
+    milestone_id: int
     prerequisite_ids: list[int]
 
 
