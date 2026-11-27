@@ -7,9 +7,10 @@ from pydantic import BaseModel
 from app.config import settings
 from app.curriculum.selection import compute_unlocked_milestones, select_frontier_items, select_topic
 from app.db.conversations import get_recent_topics
+from app.db.engagement import get_unsurfaced_engagement_topics, mark_engagement_topics_surfaced
 from app.db.memory import get_chronic_issue_states, get_due_items, get_introduced_item_ids, get_mastered_states
 from app.db.milestones import get_introduced_counts_by_milestone, get_milestone_item_counts, list_milestones
-from app.db.models import Milestone, SkillItem, User
+from app.db.models import EngagementTopic, Milestone, SkillItem, User
 from app.db.skills import list_skill_items
 from app.db.users import get_interests
 
@@ -27,6 +28,7 @@ class SessionPlan(BaseModel):
     new_items: list[SkillItem]
     current_milestone: Milestone | None
     learner_profile: LearnerProfileSummary
+    engagement_topics: list[EngagementTopic]
 
 
 def _build_learner_profile(
@@ -100,6 +102,13 @@ def build_session_plan(user: User) -> SessionPlan:
 
     learner_profile = _build_learner_profile(all_items_by_id, milestones_by_id, user.id, now_iso)
 
+    # Best-effort "offer once" the same way due/new items are - there's no later signal to confirm
+    # a topic actually came up in conversation, so it's marked surfaced as soon as it's handed to
+    # this plan rather than left to accumulate and get re-offered every session indefinitely.
+    engagement_topics = get_unsurfaced_engagement_topics(user.id, settings.max_engagement_topics_shown)
+    if engagement_topics:
+        mark_engagement_topics_surfaced([t.id for t in engagement_topics])
+
     return SessionPlan(
         user=user,
         topic=topic,
@@ -107,4 +116,5 @@ def build_session_plan(user: User) -> SessionPlan:
         new_items=new_items,
         current_milestone=current_milestone,
         learner_profile=learner_profile,
+        engagement_topics=engagement_topics,
     )

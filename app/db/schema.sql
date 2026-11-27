@@ -133,5 +133,23 @@ CREATE TABLE IF NOT EXISTS message_item_events (
     outcome TEXT NOT NULL CHECK (outcome IN ('correct', 'hesitant', 'incorrect', 'avoided'))
 );
 
+-- Topics the user showed noticeably more engagement with during a conversation - positive
+-- (genuinely enjoyed, proud of, excited about) or negative (stressful/upsetting to discuss) -
+-- worth a persona deliberately reopening later. Distinct from `interests` (a flat weight used only
+-- to pick a session's headline topic): this is concrete enough to drive how a follow-up should be
+-- framed, not just whether one happens. `surfaced_at` is set once it's been handed to a session
+-- prompt - best-effort (there's no signal confirming the persona actually worked it in), same
+-- "offer once, then let it go" treatment session_plan already gives due/new skill items.
+CREATE TABLE IF NOT EXISTS engagement_topics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    topic TEXT NOT NULL,
+    valence TEXT NOT NULL CHECK (valence IN ('positive', 'negative')),
+    follow_up_note TEXT NOT NULL,
+    surfaced_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_user_item_state_due ON user_item_state (user_id, due_at);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages (conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_engagement_topics_unsurfaced ON engagement_topics (user_id, surfaced_at);

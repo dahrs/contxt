@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from app.conversation.session_plan import SessionPlan
-from app.db.models import Persona, SkillItem
+from app.db.models import EngagementTopic, Persona, SkillItem
 
 
 def _format_elapsed(delta: timedelta) -> str:
@@ -135,6 +135,28 @@ def _session_plan_fragment(plan: SessionPlan) -> str:
     )
 
 
+def _engagement_fragment(topics: list[EngagementTopic]) -> str:
+    """Topics the user noticeably engaged with in a past conversation (see
+    app.persona.memory._apply_engagement_topics) - framed differently by valence so a hard subject
+    only gets a quiet, deniable opening while a good one can be raised directly."""
+    if not topics:
+        return ""
+    lines = []
+    for item in topics:
+        if item.valence == "positive":
+            lines.append(f"- {item.topic}: they lit up talking about this before - {item.follow_up_note}")
+        else:
+            lines.append(
+                f"- {item.topic}: this was a hard or upsetting subject for them before - don't bring it up "
+                f"directly, but {item.follow_up_note} could naturally open the door if they want to go there "
+                "themselves."
+            )
+    return (
+        "## Worth bringing up again\n" + "\n".join(lines) + "\n\nOnly do this if it fits naturally and matches "
+        "who you are - never force it, and never more than one of these in a single reply."
+    )
+
+
 def build_system_prompt(
     plan: SessionPlan,
     persona: Persona,
@@ -147,6 +169,7 @@ def build_system_prompt(
         _persona_fragment(persona, plan.user.display_name, plan.user.target_lang, shared_interest),
         _relationship_fragment(relationship_summary),
         _time_context_fragment(persona, time_since_last_contact),
+        _engagement_fragment(plan.engagement_topics),
         _session_plan_fragment(plan),
     ]
     return "\n\n".join(fragment for fragment in fragments if fragment)

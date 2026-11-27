@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from app.conversation.prompt import build_proactive_kickoff_message, build_system_prompt, build_turn_reminder
 from app.conversation.session_plan import LearnerProfileSummary, SessionPlan
-from app.db.models import Milestone, Persona, SkillItem, User
+from app.db.models import EngagementTopic, Milestone, Persona, SkillItem, User
 
 
 def _user() -> User:
@@ -38,9 +38,18 @@ def _plan(**overrides: object) -> SessionPlan:
         "learner_profile": LearnerProfileSummary(
             known_item_count=5, known_milestones={"greetings": 5}, chronic_issue_items=[]
         ),
+        "engagement_topics": [],
     }
     defaults.update(overrides)
     return SessionPlan.model_validate(defaults)
+
+
+def _engagement_topic(
+    topic: str = "half-marathon training", valence: str = "positive", note: str = "ask how it went"
+) -> EngagementTopic:
+    return EngagementTopic(
+        id=1, user_id=1, topic=topic, valence=valence, follow_up_note=note, surfaced_at=None, created_at="x"
+    )
 
 
 def _persona(**overrides: object) -> Persona:
@@ -243,3 +252,34 @@ def test__build_system_prompt_omits_advanced_clause_when_milestone_in_progress()
     )
 
     assert "nothing scripted left to introduce" not in prompt
+
+
+def test__build_system_prompt_omits_engagement_fragment_when_no_topics() -> None:
+    prompt = build_system_prompt(_plan(engagement_topics=[]), _persona(), ("cooking", True), "", None)
+
+    assert "Worth bringing up again" not in prompt
+
+
+def test__build_system_prompt_positive_engagement_topic_invites_a_direct_follow_up() -> None:
+    topic = _engagement_topic(valence="positive", note="ask how the race went")
+    prompt = build_system_prompt(_plan(engagement_topics=[topic]), _persona(), ("cooking", True), "", None)
+
+    assert "Worth bringing up again" in prompt
+    assert "half-marathon training" in prompt
+    assert "ask how the race went" in prompt
+    assert "don't bring it up directly" not in prompt
+
+
+def test__build_system_prompt_negative_engagement_topic_only_suggests_an_oblique_opening() -> None:
+    topic = _engagement_topic(valence="negative", note="ask how work has been lately")
+    prompt = build_system_prompt(_plan(engagement_topics=[topic]), _persona(), ("cooking", True), "", None)
+
+    assert "don't bring it up directly" in prompt
+    assert "ask how work has been lately" in prompt
+
+
+def test__build_system_prompt_session_focus_still_comes_last_with_engagement_topics_present() -> None:
+    topic = _engagement_topic()
+    prompt = build_system_prompt(_plan(engagement_topics=[topic]), _persona(), ("cooking", True), "", None)
+
+    assert prompt.index("Worth bringing up again") < prompt.index("This session's focus")

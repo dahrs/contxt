@@ -54,7 +54,11 @@ def _message(id_: int, role: MessageRole, text: str) -> Message:
     return Message(id=id_, conversation_id=1, role=role, text=text, created_at="x")
 
 
-def _sync_response(summary: str = "updated summary text", **character_updates: object) -> str:
+def _sync_response(
+    summary: str = "updated summary text",
+    engagement_topics: list[dict[str, object]] | None = None,
+    **character_updates: object,
+) -> str:
     defaults: dict[str, object] = {
         "interests_added": [],
         "interests_removed": [],
@@ -62,7 +66,13 @@ def _sync_response(summary: str = "updated summary text", **character_updates: o
         "background": None,
     }
     defaults.update(character_updates)
-    return json.dumps({"relationship_summary": summary, "character_updates": defaults})
+    return json.dumps(
+        {
+            "relationship_summary": summary,
+            "character_updates": defaults,
+            "engagement_topics": engagement_topics or [],
+        }
+    )
 
 
 def test__sync_after_conversation_is_a_noop_when_nothing_new(
@@ -190,6 +200,84 @@ def test__sync_after_conversation_applies_daily_routine_change(
     sync_after_conversation(fake_llm, _user(), _persona())
 
     assert updates == [(1, "now an early riser, up at 6am", None)]
+
+
+def test__sync_after_conversation_records_engagement_topics(
+    monkeypatch: pytest.MonkeyPatch, fake_llm: FakeLLMClient
+) -> None:
+    existing = PersonaMemory(user_id=1, persona_id=1, summary="", last_summarized_message_id=0, updated_at="x")
+    fake_llm.judge_response = _sync_response(
+        engagement_topics=[
+            {"topic": "half-marathon training", "valence": "positive", "follow_up_note": "ask how the race went"},
+            {"topic": "job stress", "valence": "negative", "follow_up_note": "ask how work has been lately"},
+        ]
+    )
+    recorded: list[tuple[int, str, str, str]] = []
+    monkeypatch.setattr(memory_module, "get_memory", lambda user_id, persona_id: existing)
+    monkeypatch.setattr(
+        memory_module, "get_messages_with_persona_after", lambda user_id, persona_id, after: [_message(1, "user", "hi")]
+    )
+    monkeypatch.setattr(memory_module, "upsert_memory", lambda *a, **kw: None)
+    monkeypatch.setattr(memory_module, "get_interests", lambda user_id: {})
+    monkeypatch.setattr(memory_module, "set_interests", lambda *a, **kw: None)
+    monkeypatch.setattr(
+        memory_module,
+        "add_engagement_topic",
+        lambda user_id, topic, valence, note: recorded.append((user_id, topic, valence, note)),
+    )
+
+    sync_after_conversation(fake_llm, _user(), _persona())
+
+    assert recorded == [
+        (1, "half-marathon training", "positive", "ask how the race went"),
+        (1, "job stress", "negative", "ask how work has been lately"),
+    ]
+
+
+def test__sync_after_conversation_bumps_interest_weight_for_positive_engagement_topic_only(
+    monkeypatch: pytest.MonkeyPatch, fake_llm: FakeLLMClient
+) -> None:
+    existing = PersonaMemory(user_id=1, persona_id=1, summary="", last_summarized_message_id=0, updated_at="x")
+    fake_llm.judge_response = _sync_response(
+        engagement_topics=[
+            {"topic": "running", "valence": "positive", "follow_up_note": "note"},
+            {"topic": "job stress", "valence": "negative", "follow_up_note": "note"},
+        ]
+    )
+    set_interests_calls: list[dict[str, float]] = []
+    monkeypatch.setattr(memory_module, "get_memory", lambda user_id, persona_id: existing)
+    monkeypatch.setattr(
+        memory_module, "get_messages_with_persona_after", lambda user_id, persona_id, after: [_message(1, "user", "hi")]
+    )
+    monkeypatch.setattr(memory_module, "upsert_memory", lambda *a, **kw: None)
+    monkeypatch.setattr(memory_module, "add_engagement_topic", lambda *a, **kw: None)
+    monkeypatch.setattr(memory_module, "get_interests", lambda user_id: {"running": 1.0})
+    monkeypatch.setattr(memory_module, "set_interests", lambda user_id, topics: set_interests_calls.append(topics))
+
+    sync_after_conversation(fake_llm, _user(), _persona())
+
+    assert len(set_interests_calls) == 1
+    assert set_interests_calls[0]["running"] == 1.5
+    assert "job stress" not in set_interests_calls[0]
+
+
+def test__sync_after_conversation_does_not_touch_interests_when_no_positive_engagement_topics(
+    monkeypatch: pytest.MonkeyPatch, fake_llm: FakeLLMClient
+) -> None:
+    existing = PersonaMemory(user_id=1, persona_id=1, summary="", last_summarized_message_id=0, updated_at="x")
+    fake_llm.judge_response = _sync_response(
+        engagement_topics=[{"topic": "job stress", "valence": "negative", "follow_up_note": "note"}]
+    )
+    monkeypatch.setattr(memory_module, "get_memory", lambda user_id, persona_id: existing)
+    monkeypatch.setattr(
+        memory_module, "get_messages_with_persona_after", lambda user_id, persona_id, after: [_message(1, "user", "hi")]
+    )
+    monkeypatch.setattr(memory_module, "upsert_memory", lambda *a, **kw: None)
+    monkeypatch.setattr(memory_module, "add_engagement_topic", lambda *a, **kw: None)
+    monkeypatch.setattr(memory_module, "get_interests", lambda user_id: pytest.fail("should not be read"))
+    monkeypatch.setattr(memory_module, "set_interests", lambda *a, **kw: pytest.fail("should not set"))
+
+    sync_after_conversation(fake_llm, _user(), _persona())
 
 
 def test__sync_after_conversation_does_not_touch_character_sheet_when_no_commitments(

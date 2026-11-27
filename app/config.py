@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     new_items_per_session: int = 2
     max_due_items_per_session: int = 5
     max_chronic_items_shown: int = 3
+    max_engagement_topics_shown: int = 2
     relationship_summary_max_words: int = 120
     proactive_min_gap_hours: int = 20
     milestone_unlock_threshold: float = 0.7

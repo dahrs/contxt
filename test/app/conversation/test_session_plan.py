@@ -5,7 +5,7 @@ import pytest
 import app.conversation.session_plan as session_plan_module
 from app.config import settings
 from app.conversation.session_plan import build_session_plan
-from app.db.models import Milestone, SkillItem, User, UserItemState
+from app.db.models import EngagementTopic, Milestone, SkillItem, User, UserItemState
 
 
 def _user() -> User:
@@ -45,6 +45,18 @@ def _state(item_id: int, due_at: str = "2020-01-01T00:00:00Z", lapses: int = 0) 
     )
 
 
+def _engagement_topic(id_: int, topic: str = "half-marathon training") -> EngagementTopic:
+    return EngagementTopic(
+        id=id_,
+        user_id=1,
+        topic=topic,
+        valence="positive",
+        follow_up_note="ask how it went",
+        surfaced_at=None,
+        created_at="x",
+    )
+
+
 def _patch_collaborators(
     monkeypatch: pytest.MonkeyPatch,
     all_items: list[SkillItem],
@@ -57,6 +69,8 @@ def _patch_collaborators(
     milestones: list[Milestone] | None = None,
     milestone_item_counts: dict[int, int] | None = None,
     introduced_counts_by_milestone: dict[int, int] | None = None,
+    engagement_topics: list[EngagementTopic] | None = None,
+    surfaced_topic_ids: list[list[int]] | None = None,
 ) -> None:
     monkeypatch.setattr(session_plan_module, "list_skill_items", lambda native_lang, target_lang: all_items)
     monkeypatch.setattr(session_plan_module, "get_introduced_item_ids", lambda user_id: introduced_ids)
@@ -77,6 +91,16 @@ def _patch_collaborators(
         session_plan_module,
         "get_introduced_counts_by_milestone",
         lambda user_id, native_lang, target_lang: introduced_counts_by_milestone or {},
+    )
+    monkeypatch.setattr(
+        session_plan_module,
+        "get_unsurfaced_engagement_topics",
+        lambda user_id, limit: engagement_topics or [],
+    )
+    monkeypatch.setattr(
+        session_plan_module,
+        "mark_engagement_topics_surfaced",
+        lambda topic_ids: surfaced_topic_ids.append(topic_ids) if surfaced_topic_ids is not None else None,
     )
 
 
@@ -204,3 +228,47 @@ def test__build_session_plan_sets_current_milestone_to_the_one_in_progress(monke
 
     assert plan.current_milestone is not None
     assert plan.current_milestone.name == "greetings"
+
+
+def test__build_session_plan_includes_and_marks_engagement_topics_surfaced(monkeypatch: pytest.MonkeyPatch) -> None:
+    topic = _engagement_topic(99)
+    surfaced: list[list[int]] = []
+    _patch_collaborators(
+        monkeypatch,
+        all_items=[],
+        introduced_ids=set(),
+        due_states=[],
+        mastered_states=[],
+        chronic_states=[],
+        interests={"travel": 1.0},
+        recent_topics=[],
+        engagement_topics=[topic],
+        surfaced_topic_ids=surfaced,
+    )
+
+    plan = build_session_plan(_user())
+
+    assert [t.id for t in plan.engagement_topics] == [99]
+    assert surfaced == [[99]]
+
+
+def test__build_session_plan_does_not_mark_anything_surfaced_when_none_pending(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    surfaced: list[list[int]] = []
+    _patch_collaborators(
+        monkeypatch,
+        all_items=[],
+        introduced_ids=set(),
+        due_states=[],
+        mastered_states=[],
+        chronic_states=[],
+        interests={"travel": 1.0},
+        recent_topics=[],
+        engagement_topics=[],
+        surfaced_topic_ids=surfaced,
+    )
+
+    build_session_plan(_user())
+
+    assert surfaced == []

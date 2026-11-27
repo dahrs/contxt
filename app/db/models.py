@@ -7,6 +7,7 @@ from pydantic import BaseModel
 SkillItemType = Literal["vocab", "grammar", "syntax", "phonetic", "register"]
 MessageRole = Literal["user", "assistant"]
 ItemOutcome = Literal["correct", "hesitant", "incorrect", "avoided"]
+EngagementValence = Literal["positive", "negative"]
 
 
 class User(BaseModel):
@@ -98,3 +99,13 @@ class PersonaMemory(BaseModel):
     summary: str
     last_summarized_message_id: int | None
     updated_at: str
+
+
+class EngagementTopic(BaseModel):
+    id: int
+    user_id: int
+    topic: str
+    valence: EngagementValence
+    follow_up_note: str
+    surfaced_at: str | None
+    created_at: str
